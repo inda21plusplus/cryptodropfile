@@ -1,0 +1,15 @@
+[package]
+name = "dropbox"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sodiumoxide = "0.2.6"
+protobuf = "2.25.2"
+prost = "0.6"
+# Only necessary if using Protobuf well-known types:
+prost-types = "0.6"
+trait_enum = "0.5"
+local-ip-address = "0.4.4"
