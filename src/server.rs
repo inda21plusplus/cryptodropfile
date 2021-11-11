@@ -3,7 +3,6 @@ use std::collections::LinkedList;
 use std::default;
 use prost::Message;
 
-use crate::error::server_error::*;
 use crate::error::server_error::Result;
 use crate::protobuf_msg::SomeMessage;
 
@@ -57,7 +56,7 @@ impl Server {
         }
         self.port_listener = port_listener;
         if error.is_some() {
-            return Err(error.unwrap().to_chess_gui_error());
+            return Err(error.unwrap().into());
         }
         return Ok(());
     }
