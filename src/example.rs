@@ -108,28 +108,22 @@ pub fn run_client() {
             filename: "".into(),
             data: user_hash,
         };
-        let mut buf: Vec<u8> = vec!();
-        let data = msg.encode(&mut buf);
+        let buf = protobuf_msg::encode(vec!(&msg));
         println!("Client: Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
-
-        // Wait for server to parse message
-        let dur: std::time::Duration = std::time::Duration::from_secs_f64(10.0);
-        std::thread::sleep(dur);
 
         let msg = protobuf_msg::SomeMessage {
             action: protobuf_msg::Action::AddFile as i32,
             filename: "new file".into(),
             data: "this text is inside file".to_string().as_bytes().to_vec(),
         };
-        let mut buf: Vec<u8> = vec!();
-        let data = msg.encode(&mut buf);
+        let buf = protobuf_msg::encode(vec!(&msg));
         println!("Client: Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
         println!("Client: Waiting for respons");
 
         loop {
-            let result = server::read_to_end_tcp_stream_bytes(clientstream, 100000000);
+            let result = server::read_tcp_stream_bytes(clientstream, 100000000);
             if result.is_ok() {
                 println!("Client: recieved bytes: {}", result.unwrap().len())
             }

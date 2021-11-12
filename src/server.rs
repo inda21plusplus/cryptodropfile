@@ -84,14 +84,16 @@ impl UserConnection {
         // Read incomming data
         let data = read_tcp_stream_bytes(self.stream.as_mut().unwrap(), 100000000)?;
         println!("Server: Recieved message: {}", data.len());
-        let message = crate::protobuf_msg::message_from_bytes(&data);
-        if message.is_err() {
-            return Err(("Could not parse message: ".to_string()
-                + &message.err().unwrap().to_string())
-                .into());
+        let msg_list = crate::protobuf_msg::decode(&data);
+        if data.len() == msg_list.len {
+            println!("Server: Managed to fully parse all messages!");
         }
-        let message = message.unwrap();
-        self.handle_message(&message)?;
+        else {
+            println!("Server: Managed to parse {} of {}", msg_list.len, data.len());
+        }
+        for msg in msg_list.msg {
+            self.handle_message(&msg)?;
+        }
         return Ok(());
     }
     pub fn handle_message(&mut self, msg: &SomeMessage) -> Result<()> {
@@ -241,10 +243,7 @@ impl UserConnection {
     }
     // Send the message to user
     pub fn send(&mut self, msg: &SomeMessage) -> Result<()> {
-        let mut buf: Vec<u8> = vec![];
-        if msg.encode(&mut buf).is_err() {
-            return Err("encoding failed".into());
-        }
+        let buf = crate::protobuf_msg::encode(vec!(msg));
         println!("Server: Sending respons: {}", buf.len());
         write_to_tcp_stream_bytes(self.stream.as_mut().unwrap(), &buf)?;
         return Ok(());

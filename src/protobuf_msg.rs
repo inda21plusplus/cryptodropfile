@@ -41,10 +41,6 @@ impl SomeMessage {
     }
 }
 
-pub fn message_from_bytes(buf: &Vec<u8>) -> Result<SomeMessage, prost::DecodeError> {
-    return SomeMessage::decode(&**buf);
-}
-
 pub struct ParseResult {
     pub msg: Vec<SomeMessage>,
     pub len: usize
@@ -59,7 +55,7 @@ impl ParseResult {
     }
 }
 
-pub fn parse_bytes_to_msg(buf: &Vec<u8>) -> ParseResult {
+pub fn decode(buf: &Vec<u8>) -> ParseResult {
     let mut parse_result = ParseResult::new();
     let mut read_buf = buf.to_vec();
     loop {
@@ -76,7 +72,7 @@ pub fn parse_bytes_to_msg(buf: &Vec<u8>) -> ParseResult {
     }
 }
 
-pub fn messages_to_bytes(msg_list: Vec<SomeMessage>) -> Vec<u8> {
+pub fn encode(msg_list: Vec<&SomeMessage>) -> Vec<u8> {
     let mut return_buf: Vec<u8> = vec![];
     for msg in msg_list {
         let mut buf: Vec<u8> = vec![];
