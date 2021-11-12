@@ -189,6 +189,7 @@ impl UserConnection {
     pub fn save_file(&mut self, msg: &SomeMessage) -> Result<()> {
         // Saves the file in users directory
         // There can be multiple of the same file in directory, but server wont know they are the same due to salt
+        println!("Server: Saving file");
         let path = self.file_path(msg)?;
         crate::file::write_file(&msg.data, &path)?;
         return Ok(());
@@ -208,6 +209,7 @@ impl UserConnection {
     }
     // Request sent by client to load file, read it and send to client
     pub fn load_file(&mut self, msg: &SomeMessage) -> Result<SomeMessage> {
+        println!("Server: Loading file");
         let path = self.file_path(msg)?;
         let data = crate::file::read_file(&path)?;
         let respons = crate::protobuf_msg::SomeMessage {
@@ -219,6 +221,7 @@ impl UserConnection {
     }
     // Send a list of all files that the user has available
     pub fn get_file_list(&mut self) -> Result<SomeMessage> {
+        println!("Server: Return list of files");
         let file_list = crate::file::get_files(&self.user_path()?)?;
         let mut return_str = String::new();
         let mut iter_num = 0;
