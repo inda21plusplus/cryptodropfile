@@ -1,7 +1,7 @@
-use std::net::{TcpListener, TcpStream};
+use prost::Message;
 use std::collections::LinkedList;
 use std::default;
-use prost::Message;
+use std::net::{TcpListener, TcpStream};
 
 use crate::error::server_error::Result;
 use crate::protobuf_msg::SomeMessage;
@@ -20,13 +20,14 @@ impl Server {
         let listening_port_ip: String;
         if local {
             listening_port_ip = "127.0.0.1:".to_string() + listening_port.to_string().as_str();
-        }
-        else {
+        } else {
             listening_port_ip = get_local_ip().unwrap() + ":" + listening_port.to_string().as_str();
         }
         let port_listener = TcpListener::bind(listening_port_ip.as_str());
         if port_listener.is_err() {
-            return Err(("Could not bind listening port: ".to_string() + listening_port_ip.as_str()).into());
+            return Err(("Could not bind listening port: ".to_string()
+                + listening_port_ip.as_str())
+            .into());
         }
         println!("server listening on ip: {}", listening_port_ip);
         Ok(Self {
@@ -37,9 +38,12 @@ impl Server {
         })
     }
     fn handle_client(&mut self, stream: TcpStream) {
-        stream.set_nonblocking(true).expect("set_nonblocking call failed");
+        stream
+            .set_nonblocking(true)
+            .expect("set_nonblocking call failed");
         println!("Server: Add connection");
-        self.connections.push_back(UserConnection::new(Some(stream)));
+        self.connections
+            .push_back(UserConnection::new(Some(stream)));
     }
     pub fn accept_incomming_connections(&mut self) -> Result<()> {
         let mut port_listener = self.port_listener.take();
@@ -69,7 +73,6 @@ impl Server {
     }
 }
 
-
 #[allow(dead_code)]
 pub struct UserConnection {
     stream: Option<TcpStream>,
@@ -79,10 +82,13 @@ pub struct UserConnection {
 impl UserConnection {
     pub fn update(&mut self) -> Result<()> {
         // Read incomming data
-        let data = read_to_end_tcp_stream_bytes(self.stream.as_mut().unwrap(), usize::MAX)?;
+        let data = read_tcp_stream_bytes(self.stream.as_mut().unwrap(), 100000000)?;
+        println!("Server: Recieved message: {}", data.len());
         let message = crate::protobuf_msg::message_from_bytes(&data);
         if message.is_err() {
-            return Err(("Could not parse message: ".to_string() + &message.err().unwrap().to_string()).into());
+            return Err(("Could not parse message: ".to_string()
+                + &message.err().unwrap().to_string())
+                .into());
         }
         let message = message.unwrap();
         self.handle_message(&message)?;
@@ -112,7 +118,7 @@ impl UserConnection {
                 let respons = crate::protobuf_msg::SomeMessage {
                     action: crate::protobuf_msg::Action::Error as i32,
                     filename: "".into(),
-                    data: "could not parse action".to_string().into_bytes()
+                    data: "could not parse action".to_string().into_bytes(),
                 };
                 self.send(&respons)?;
                 return Err("Could not parse action: ".into());
@@ -123,7 +129,7 @@ impl UserConnection {
     pub fn new(stream: Option<TcpStream>) -> Self {
         Self {
             stream,
-            userid: "".into()
+            userid: "".into(),
         }
     }
     pub fn login(&mut self, msg: &SomeMessage) -> Result<()> {
@@ -138,10 +144,10 @@ impl UserConnection {
             // Make sure user exists
             if user_list.contains(&user_id) {
                 self.userid = user_id;
+            } else {
+                return Err("could not locate user".into());
             }
-            else {
-                return Err("could not locate user".into())
-            }
+            println!("Server: User logged in!");
         }
         return Ok(());
     }
@@ -150,7 +156,7 @@ impl UserConnection {
         // Takes in the the userid
         if msg.data.len() < 128 {
             // Get a list of current users
-            let user_list = crate::file::get_diretories("./user").unwrap_or(vec!());
+            let user_list = crate::file::get_diretories("./user").unwrap_or(vec![]);
 
             // Convert hash to hex string
             let user_id = crate::crypto::to_hex_str(&msg.data);
@@ -160,10 +166,10 @@ impl UserConnection {
                 let new_path = "./user/".to_string() + user_id.as_str();
                 std::fs::create_dir_all(new_path)?;
                 self.userid = user_id;
+            } else {
+                return Err("user already exists".into());
             }
-            else {
-                return Err("user already exists".into())
-            }
+            println!("Server: User registered!");
         }
         return Ok(());
     }
@@ -196,19 +202,18 @@ impl UserConnection {
     pub fn logged_in(&self) -> Result<()> {
         if self.userid != "".to_string() {
             return Ok(());
-        }
-        else {
-            return Err("not logged in".into())
+        } else {
+            return Err("not logged in".into());
         }
     }
     // Request sent by client to load file, read it and send to client
-    pub fn load_file(&mut self, msg: &SomeMessage) -> Result<SomeMessage>  {
+    pub fn load_file(&mut self, msg: &SomeMessage) -> Result<SomeMessage> {
         let path = self.file_path(msg)?;
         let data = crate::file::read_file(&path)?;
         let respons = crate::protobuf_msg::SomeMessage {
             action: crate::protobuf_msg::Action::GetFile as i32,
             filename: msg.filename.clone(),
-            data
+            data,
         };
         return Ok(respons);
     }
@@ -223,26 +228,25 @@ impl UserConnection {
             }
             return_str += i;
             iter_num += 1;
-
         }
         let respons = crate::protobuf_msg::SomeMessage {
             action: crate::protobuf_msg::Action::GetFileList as i32,
             filename: "".into(),
-            data: return_str.into_bytes()
+            data: return_str.into_bytes(),
         };
         return Ok(respons);
     }
     // Send the message to user
     pub fn send(&mut self, msg: &SomeMessage) -> Result<()> {
-        let mut buf: Vec<u8> = vec!();
+        let mut buf: Vec<u8> = vec![];
         if msg.encode(&mut buf).is_err() {
             return Err("encoding failed".into());
         }
+        println!("Server: Sending respons: {}", buf.len());
         write_to_tcp_stream_bytes(self.stream.as_mut().unwrap(), &buf)?;
         return Ok(());
     }
 }
-
 
 use std::io::Read;
 use std::io::Write;
@@ -261,7 +265,7 @@ pub fn read_tcp_stream_bytes(stream: &mut TcpStream, max_read_size: usize) -> Re
     buf.resize(max_read_size, 0);
     //println!("read");
     match stream.read(&mut buf) {
-        Ok(size) => {buf.resize(size, 0)},
+        Ok(size) => buf.resize(size, 0),
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
             // wait until network socket is ready, typically implemented
             // via platform-specific APIs such as epoll or IOCP
@@ -275,12 +279,15 @@ pub fn read_tcp_stream_bytes(stream: &mut TcpStream, max_read_size: usize) -> Re
     //println!("bytes: {:?}", buf);
     return Ok(buf);
 }
-pub fn read_to_end_tcp_stream_bytes(stream: &mut TcpStream, max_read_size: usize) -> Result<Vec<u8>> {
+pub fn read_to_end_tcp_stream_bytes(
+    stream: &mut TcpStream,
+    max_read_size: usize,
+) -> Result<Vec<u8>> {
     let mut buf = vec![];
     buf.resize(max_read_size, 0);
     //println!("read");
     match stream.read_to_end(&mut buf) {
-        Ok(size) => {buf.resize(size, 0)},
+        Ok(size) => buf.resize(size, 0),
         Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
             // wait until network socket is ready, typically implemented
             // via platform-specific APIs such as epoll or IOCP

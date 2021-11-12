@@ -1,5 +1,3 @@
-
-
 pub fn to_hex_str(data: &[u8]) -> String {
     use std::fmt::Write;
     let mut s = String::new();

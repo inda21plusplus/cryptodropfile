@@ -4,7 +4,7 @@ pub mod server_error {
     pub type Result<T> = std::result::Result<T, ErrorEnum>;
 
     use std::io::Error;
-    trait_enum!{
+    trait_enum! {
         #[derive(Debug)]
         pub enum ErrorEnum: ToString {
             String,

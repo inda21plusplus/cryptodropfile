@@ -31,8 +31,8 @@ pub fn get_paths(path: &str) -> Result<()> {
 }
 
 #[allow(dead_code)]
-pub fn get_files(path: &str) -> Result<Vec<String>>  {
-    let mut return_list: Vec<String> = vec!();
+pub fn get_files(path: &str) -> Result<Vec<String>> {
+    let mut return_list: Vec<String> = vec![];
 
     use std::fs;
     let paths = fs::read_dir(path).unwrap();
@@ -41,7 +41,14 @@ pub fn get_files(path: &str) -> Result<Vec<String>>  {
         if path.is_ok() {
             let path = path.unwrap();
             if path.path().is_file() {
-                let name = path.path().file_name().clone().unwrap().to_str().unwrap().to_string();
+                let name = path
+                    .path()
+                    .file_name()
+                    .clone()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
                 return_list.push(name);
             }
         }
@@ -52,7 +59,7 @@ pub fn get_files(path: &str) -> Result<Vec<String>>  {
 
 #[allow(dead_code)]
 pub fn get_diretories(path: &str) -> Result<Vec<String>> {
-    let mut return_list: Vec<String> = vec!();
+    let mut return_list: Vec<String> = vec![];
 
     use std::fs;
     let paths = fs::read_dir(path)?;
@@ -60,7 +67,14 @@ pub fn get_diretories(path: &str) -> Result<Vec<String>> {
         if path.is_ok() {
             let path = path.unwrap();
             if path.path().is_dir() {
-                let name = path.path().file_name().clone().unwrap().to_str().unwrap().to_string();
+                let name = path
+                    .path()
+                    .file_name()
+                    .clone()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
                 return_list.push(name);
             }
         }

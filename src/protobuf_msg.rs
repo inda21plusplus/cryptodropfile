@@ -1,5 +1,5 @@
 use prost;
-use prost::{Message, Enumeration};
+use prost::{Enumeration, Message};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct SomeMessage {
@@ -14,17 +14,17 @@ pub struct SomeMessage {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Enumeration)]
-    #[repr(i32)]
-    pub enum Action {
-        DeleteFile = 0,
-        AddFile = 1,
-        GetFile = 2,
-        GetFileList = 3,
-        Login = 4,
-        Logout = 5,
-        Error = 6,
-        Register = 7
-    }
+#[repr(i32)]
+pub enum Action {
+    DeleteFile = 0,
+    AddFile = 1,
+    GetFile = 2,
+    GetFileList = 3,
+    Login = 4,
+    Logout = 5,
+    Error = 6,
+    Register = 7,
+}
 
 impl SomeMessage {
     #[allow(dead_code)]
@@ -47,13 +47,13 @@ pub fn message_from_bytes(buf: &Vec<u8>) -> Result<SomeMessage, prost::DecodeErr
 
 #[allow(dead_code)]
 pub fn example() {
-    let msg = SomeMessage{
+    let msg = SomeMessage {
         action: Action::AddFile.into(),
         filename: "somefile".into(),
-        data: vec!()
+        data: vec![],
     };
     println!("before: {}", msg.to_string());
-    let mut buf: Vec<u8> = vec!();
+    let mut buf: Vec<u8> = vec![];
     let _ = msg.encode(&mut buf);
     let read = SomeMessage::decode(&*buf).unwrap();
     println!("after: {}", read.to_string());
