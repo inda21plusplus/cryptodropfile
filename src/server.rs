@@ -39,7 +39,7 @@ impl Server {
     fn handle_client(&mut self, stream: TcpStream) {
         stream.set_nonblocking(true).expect("set_nonblocking call failed");
         println!("Server: Add connection");
-        self.connections.push_back(UserConnection::new(stream));
+        self.connections.push_back(UserConnection::new(Some(stream)));
     }
     pub fn accept_incomming_connections(&mut self) -> Result<()> {
         let mut port_listener = self.port_listener.take();
@@ -72,14 +72,14 @@ impl Server {
 
 #[allow(dead_code)]
 pub struct UserConnection {
-    stream: TcpStream,
+    stream: Option<TcpStream>,
     userid: String,
 }
 
 impl UserConnection {
     pub fn update(&mut self) -> Result<()> {
         // Read incomming data
-        let data = read_to_end_tcp_stream_bytes(&mut self.stream, usize::MAX)?;
+        let data = read_to_end_tcp_stream_bytes(self.stream.as_mut().unwrap(), usize::MAX)?;
         let message = crate::protobuf_msg::message_from_bytes(&data);
         if message.is_err() {
             return Err(("Could not parse message: ".to_string() + &message.err().unwrap().to_string()).into());
@@ -95,13 +95,18 @@ impl UserConnection {
                 self.login(msg)?;
             }
             Some(Action::GetFile) => {
-                self.load_file(msg)?;
+                let respons = self.load_file(msg)?;
+                self.send(&respons)?;
             }
             Some(Action::AddFile) => {
                 self.save_file(msg)?;
             }
             Some(Action::GetFileList) => {
-                self.get_file_list()?;
+                let respons = self.get_file_list()?;
+                self.send(&respons)?;
+            }
+            Some(Action::Register) => {
+                self.register_new_user(msg)?;
             }
             _ => {
                 let respons = crate::protobuf_msg::SomeMessage {
@@ -115,7 +120,7 @@ impl UserConnection {
         }
         return Ok(());
     }
-    pub fn new(stream: TcpStream) -> Self {
+    pub fn new(stream: Option<TcpStream>) -> Self {
         Self {
             stream,
             userid: "".into()
@@ -140,12 +145,12 @@ impl UserConnection {
         }
         return Ok(());
     }
-    pub fn _register_new_user(&mut self, msg: &SomeMessage) -> Result<()> {
+    pub fn register_new_user(&mut self, msg: &SomeMessage) -> Result<()> {
         // Registers a new user, done after request by user
         // Takes in the the userid
         if msg.data.len() < 128 {
             // Get a list of current users
-            let user_list = crate::file::get_diretories("./user")?;
+            let user_list = crate::file::get_diretories("./user").unwrap_or(vec!());
 
             // Convert hash to hex string
             let user_id = crate::crypto::to_hex_str(&msg.data);
@@ -165,13 +170,13 @@ impl UserConnection {
     // Get the path of the filename
     pub fn file_path(&self, msg: &SomeMessage) -> Result<String> {
         self.is_valid_file_name(msg)?;
-        let path = self.user_path()? + &msg.filename;
+        let path = self.user_path()? + "/" + &msg.filename;
         return Ok(path);
     }
     // Get the path of the user
     pub fn user_path(&self) -> Result<String> {
         self.logged_in()?;
-        let path = "./user/".to_string() + &self.userid + "/";
+        let path = "./user/".to_string() + &self.userid;
         return Ok(path);
     }
     // Save a file that was sent by client
@@ -197,7 +202,7 @@ impl UserConnection {
         }
     }
     // Request sent by client to load file, read it and send to client
-    pub fn load_file(&mut self, msg: &SomeMessage) -> Result<()>  {
+    pub fn load_file(&mut self, msg: &SomeMessage) -> Result<SomeMessage>  {
         let path = self.file_path(msg)?;
         let data = crate::file::read_file(&path)?;
         let respons = crate::protobuf_msg::SomeMessage {
@@ -205,12 +210,11 @@ impl UserConnection {
             filename: msg.filename.clone(),
             data
         };
-        self.send(&respons)?;
-        return Ok(());
+        return Ok(respons);
     }
     // Send a list of all files that the user has available
-    pub fn get_file_list(&mut self) -> Result<()> {
-        let file_list = crate::file::get_diretories(&self.user_path()?)?;
+    pub fn get_file_list(&mut self) -> Result<SomeMessage> {
+        let file_list = crate::file::get_files(&self.user_path()?)?;
         let mut return_str = String::new();
         let mut iter_num = 0;
         for i in file_list.iter() {
@@ -226,8 +230,7 @@ impl UserConnection {
             filename: "".into(),
             data: return_str.into_bytes()
         };
-        self.send(&respons)?;
-        return Ok(());
+        return Ok(respons);
     }
     // Send the message to user
     pub fn send(&mut self, msg: &SomeMessage) -> Result<()> {
@@ -235,7 +238,7 @@ impl UserConnection {
         if msg.encode(&mut buf).is_err() {
             return Err("encoding failed".into());
         }
-        write_to_tcp_stream_bytes(&mut self.stream, &buf)?;
+        write_to_tcp_stream_bytes(self.stream.as_mut().unwrap(), &buf)?;
         return Ok(());
     }
 }

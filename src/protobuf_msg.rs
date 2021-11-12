@@ -23,6 +23,7 @@ pub struct SomeMessage {
         Login = 4,
         Logout = 5,
         Error = 6,
+        Register = 7
     }
 
 impl SomeMessage {
