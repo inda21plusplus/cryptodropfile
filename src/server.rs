@@ -68,7 +68,18 @@ impl Server {
     pub fn update(&mut self) {
         let _ = self.accept_incomming_connections();
         for i in self.connections.iter_mut() {
-            let _ = i.update();
+            let result = i.update();
+            if result.is_err() {
+                let err = result.err().unwrap();
+                match err {
+                    crate::error::server_error::ErrorEnum::String(string) => {
+                        println!("Client returned error: {}", string);
+                    }
+                    _ => {
+                        println!("Client returned error: {}", "ioError");
+                    }
+                }
+            }
         }
     }
 }
@@ -87,9 +98,12 @@ impl UserConnection {
         let msg_list = crate::protobuf_msg::decode(&data);
         if data.len() == msg_list.len {
             println!("Server: Managed to fully parse all messages!");
-        }
-        else {
-            println!("Server: Managed to parse {} of {}", msg_list.len, data.len());
+        } else {
+            println!(
+                "Server: Managed to parse {} of {}",
+                msg_list.len,
+                data.len()
+            );
         }
         for msg in msg_list.msg {
             self.handle_message(&msg)?;
@@ -243,7 +257,7 @@ impl UserConnection {
     }
     // Send the message to user
     pub fn send(&mut self, msg: &SomeMessage) -> Result<()> {
-        let buf = crate::protobuf_msg::encode(vec!(msg));
+        let buf = crate::protobuf_msg::encode(vec![msg]);
         println!("Server: Sending respons: {}", buf.len());
         write_to_tcp_stream_bytes(self.stream.as_mut().unwrap(), &buf)?;
         return Ok(());

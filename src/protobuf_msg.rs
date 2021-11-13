@@ -24,6 +24,7 @@ pub enum Action {
     Logout = 5,
     Error = 6,
     Register = 7,
+    OK = 8,
 }
 
 impl SomeMessage {
@@ -43,14 +44,14 @@ impl SomeMessage {
 
 pub struct ParseResult {
     pub msg: Vec<SomeMessage>,
-    pub len: usize
+    pub len: usize,
 }
 
 impl ParseResult {
     pub fn new() -> Self {
         Self {
-            msg: vec!(),
-            len: 0
+            msg: vec![],
+            len: 0,
         }
     }
 }

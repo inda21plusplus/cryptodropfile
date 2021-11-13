@@ -18,7 +18,7 @@ pub fn sandbox() {
         filename: "3".into(),
         data: "4".into(),
     };
-    let buf = protobuf_msg::encode(vec!(&msg1, &msg2));
+    let buf = protobuf_msg::encode(vec![&msg1, &msg2]);
     println!("buf1 and 2: {}", buf.len());
 
     let result = protobuf_msg::decode(&buf);

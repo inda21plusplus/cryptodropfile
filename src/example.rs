@@ -1,9 +1,9 @@
 use crate::crypto;
 use crate::protobuf_msg;
-use crate::server;
-use std::net::TcpStream;
-use prost::Message;
 use crate::protobuf_msg::SomeMessage;
+use crate::server;
+use prost::Message;
+use std::net::TcpStream;
 
 pub fn register_user_example() {
     let mut user = server::UserConnection::new(None);
@@ -90,12 +90,9 @@ pub fn login_get_file_list_example() {
     }
 }
 
-
-
 pub fn run_client() {
     println!("Setting up client!");
-    let mut clientstream =
-        TcpStream::connect("127.0.0.1:3000");
+    let mut clientstream = TcpStream::connect("127.0.0.1:3000");
     if clientstream.is_ok() {
         let mut clientstream = clientstream.as_mut().unwrap();
         println!("Client setup successfull!");
@@ -108,7 +105,7 @@ pub fn run_client() {
             filename: "".into(),
             data: user_hash,
         };
-        let buf = protobuf_msg::encode(vec!(&msg));
+        let buf = protobuf_msg::encode(vec![&msg]);
         println!("Client: Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
 
@@ -117,7 +114,7 @@ pub fn run_client() {
             filename: "new file".into(),
             data: "this text is inside file".to_string().as_bytes().to_vec(),
         };
-        let buf = protobuf_msg::encode(vec!(&msg));
+        let buf = protobuf_msg::encode(vec![&msg]);
         println!("Client: Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
         println!("Client: Waiting for respons");
@@ -128,9 +125,7 @@ pub fn run_client() {
                 println!("Client: recieved bytes: {}", result.unwrap().len())
             }
         }
-
-    }
-    else {
+    } else {
         println!("Client setup failed");
     }
 }
@@ -140,7 +135,7 @@ pub fn create_server_client() {
     //let dur: std::time::Duration = std::time::Duration::from_secs_f64(1.0);
     //std::thread::sleep(dur);
     std::thread::spawn(run_client);
-    
+
     loop {
         server.update();
     }
