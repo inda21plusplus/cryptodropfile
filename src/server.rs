@@ -1,4 +1,4 @@
-use prost::Message;
+//use prost::Message;
 use std::collections::LinkedList;
 use std::default;
 use std::net::{TcpListener, TcpStream};
@@ -297,6 +297,8 @@ pub fn read_tcp_stream_bytes(stream: &mut TcpStream, max_read_size: usize) -> Re
     //info!("bytes: {:?}", buf);
     return Ok(buf);
 }
+
+#[allow(dead_code)]
 pub fn read_to_end_tcp_stream_bytes(
     stream: &mut TcpStream,
     max_read_size: usize,

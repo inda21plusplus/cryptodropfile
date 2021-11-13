@@ -14,7 +14,7 @@ pub fn main() {
     info!("Setup inited!");
 
     //sandbox::sandbox();
-    crate::example::spawn_server();
+    crate::example::example::spawn_server();
     //crate::example::run_examples();
     //let mut server = crate::server::Server::new(3000, true).expect("Create server failed: ");
     //loop {

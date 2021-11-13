@@ -1,9 +1,9 @@
 // A file to test new ideas, but that are not yet ready to implement in the code
 
 use crate::protobuf_msg;
-use prost::Message;
-pub use log::*;
+//use prost::Message;
 
+#[allow(dead_code)]
 pub fn sandbox() {
     // Example on splitting messages
     let mut msg1 = protobuf_msg::SomeMessage {
@@ -11,7 +11,7 @@ pub fn sandbox() {
         filename: "1".into(),
         data: "2".into(),
     };
-    for i in 0..100 {
+    for _ in 0..100 {
         msg1.filename += "1234567890";
     }
     let msg2 = protobuf_msg::SomeMessage {
