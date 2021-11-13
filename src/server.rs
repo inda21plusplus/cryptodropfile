@@ -99,10 +99,10 @@ impl UserConnection {
         info!("Recieved message: {}", data.len());
         let msg_list = crate::protobuf_msg::decode(&data);
         if data.len() == msg_list.len {
-            info!("Managed to fully parse all messages!");
+            info!("Parsed all messages!");
         } else {
             info!(
-                "Managed to parse {} of {}",
+                "Parsed {} of {} bytes",
                 msg_list.len,
                 data.len()
             );
@@ -116,23 +116,29 @@ impl UserConnection {
         use crate::protobuf_msg::Action;
         match Action::from_i32(msg.action) {
             Some(Action::Login) => {
+                info!("handle Login message");
                 self.login(msg)?;
             }
             Some(Action::GetFile) => {
+                info!("handle GetFile message");
                 let respons = self.load_file(msg)?;
                 self.send(&respons)?;
             }
             Some(Action::AddFile) => {
+                info!("handle AddFile message");
                 self.save_file(msg)?;
             }
             Some(Action::GetFileList) => {
+                info!("handle GetFileList message");
                 let respons = self.get_file_list()?;
                 self.send(&respons)?;
             }
             Some(Action::Register) => {
+                info!("handle Register message");
                 self.register_new_user(msg)?;
             }
             _ => {
+                warn!("Coud not parse action");
                 let respons = crate::protobuf_msg::SomeMessage {
                     action: crate::protobuf_msg::Action::Error as i32,
                     filename: "".into(),
