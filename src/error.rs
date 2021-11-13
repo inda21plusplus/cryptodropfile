@@ -8,7 +8,16 @@ pub mod server_error {
         #[derive(Debug)]
         pub enum ErrorEnum: ToString {
             String,
-            Error
+            Error,
+            WaitForSocket
+        }
+    }
+
+    #[derive(Debug, Default)]
+    pub struct WaitForSocket {}
+    impl std::fmt::Display for WaitForSocket {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "({})", "WaitForSocket")
         }
     }
 

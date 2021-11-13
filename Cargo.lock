@@ -94,6 +94,7 @@ name = "dropbox"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "linked-list",
  "local-ip-address",
  "log",
  "log4rs",
@@ -200,6 +201,12 @@ name = "linked-hash-map"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
+
+[[package]]
+name = "linked-list"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4dacf969043dc69f1f731b5042eb05e030d264bcf34f2242889fcbdc7a65f06"
 
 [[package]]
 name = "local-ip-address"

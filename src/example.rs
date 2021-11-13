@@ -123,15 +123,17 @@ pub mod example {
             let _ = server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
             info!("Waiting for respons");
     
-            loop {
+            std::thread::sleep(std::time::Duration::from_secs(10));
+            /*loop {
                 let result = server::read_tcp_stream_bytes(clientstream, 100000000);
                 if result.is_ok() {
                     info!("recieved bytes: {}", result.unwrap().len())
                 }
-            }
+            }*/
         } else {
             info!("Client setup failed");
         }
+        println!("Client exited");
     }
     
     pub fn spawn_server() {

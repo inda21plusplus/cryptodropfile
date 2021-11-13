@@ -25,6 +25,7 @@ pub enum Action {
     Error = 6,
     Register = 7,
     OK = 8,
+    PING = 9
 }
 
 impl SomeMessage {

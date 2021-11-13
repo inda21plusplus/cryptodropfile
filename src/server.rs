@@ -1,10 +1,10 @@
 //use prost::Message;
-use std::collections::LinkedList;
-use std::default;
+use linked_list::LinkedList;
 use std::net::{TcpListener, TcpStream};
 
+use crate::error;
 use crate::error::server_error::Result;
-use crate::protobuf_msg::SomeMessage;
+use crate::protobuf_msg::{Action, SomeMessage};
 
 pub use log::*;
 
@@ -33,7 +33,7 @@ impl Server {
         }
         info!("server listening on ip: {}", listening_port_ip);
         Ok(Self {
-            connections: default::Default::default(),
+            connections: LinkedList::new(),
             listening_port,
             port_listener: Some(Box::new(port_listener.unwrap())),
             server_ip: listening_port_ip,
@@ -69,19 +69,55 @@ impl Server {
     // Take requests from clients
     pub fn update(&mut self) {
         let _ = self.accept_incomming_connections();
-        for i in self.connections.iter_mut() {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let mut cursor = self.connections.cursor();
+        //let mut iter = self.connections.iter_mut();
+        //let mut next = iter.next();
+        //for i in self.connections.iter_mut() {
+        loop {
+            let mut next = cursor.peek_next();
+            if next.is_none() {
+                break;
+            }
+            let i = next.as_mut().unwrap();
             let result = i.update();
             if result.is_err() {
                 let err = result.err().unwrap();
                 match err {
-                    crate::error::server_error::ErrorEnum::String(string) => {
-                        error!("Client returned error: {}", string);
+                    crate::error::server_error::ErrorEnum::Error(..) => {
+                        error!("Client returned ioerror");
+                        //error!("{}", format!("{}", err));
                     }
-                    _ => {
-                        error!("Client returned error: {}", "ioError");
+                    crate::error::server_error::ErrorEnum::String(err) => {
+                        error!("Client returned stringerror");
+                        error!("{}", err);
+                        //error!("{}", format!("{}", err));
                     }
+                    crate::error::server_error::ErrorEnum::WaitForSocket(..) => {
+                        error!("Client returned waitforsocketerror");
+                        //error!("{}", format!("{}", err));
+                    }
+                    /*_ => {
+                        error!("Client returned error");
+                        //error!("{}", format!("{}", err));
+                    }*/
                 }
             }
+            let msg = SomeMessage {
+                action: Action::PING as i32,
+                filename: "".into(),
+                data: "".into()
+            };
+            let result = i.send(&msg);
+            if result.is_err() {
+                warn!("Could not send message to client");
+                info!("removing client connection");
+                cursor.remove();
+            }
+            else {
+                info!("Ping client successfull");
+            }
+            cursor.next();
         }
     }
 }
@@ -95,7 +131,18 @@ pub struct UserConnection {
 impl UserConnection {
     pub fn update(&mut self) -> Result<()> {
         // Read incomming data
-        let data = read_tcp_stream_bytes(self.stream.as_mut().unwrap(), 100000000)?;
+        let result = read_tcp_stream_bytes(self.stream.as_mut().unwrap(), 1000000);
+        if result.is_err() {
+            let err = result.err().unwrap();
+            if let crate::error::server_error::ErrorEnum::WaitForSocket(..) = err {
+                // There was just nothing to read at the moment
+                return Ok(());
+            }
+            else {
+                return Err(err);
+            }
+        }
+        let data = result.unwrap();
         info!("Recieved message: {}", data.len());
         let msg_list = crate::protobuf_msg::decode(&data);
         if data.len() == msg_list.len {
@@ -113,7 +160,7 @@ impl UserConnection {
         return Ok(());
     }
     pub fn handle_message(&mut self, msg: &SomeMessage) -> Result<()> {
-        use crate::protobuf_msg::Action;
+        //use crate::protobuf_msg::Action;
         match Action::from_i32(msg.action) {
             Some(Action::Login) => {
                 info!("handle Login message");
@@ -290,21 +337,22 @@ pub fn read_tcp_stream_bytes(stream: &mut TcpStream, max_read_size: usize) -> Re
     //info!("read");
     match stream.read(&mut buf) {
         Ok(size) => buf.resize(size, 0),
-        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+        Err(e) if (&e).kind() == std::io::ErrorKind::WouldBlock => {
             // wait until network socket is ready, typically implemented
             // via platform-specific APIs such as epoll or IOCP
-            return Err("socket not ready".into());
+            return Err(error::server_error::ErrorEnum::WaitForSocket(Default::default()));
         }
-        Err(e) => panic!("encountered IO error: {}", e),
+        Err(e) => return Err(error::server_error::ErrorEnum::Error(e)),
     };
     if buf.len() == 0 {
-        return Err("nothing to read".into());
+        // Nothing to read yet, socket was empty
+        return Err(error::server_error::ErrorEnum::WaitForSocket(Default::default()));
     }
     //info!("bytes: {:?}", buf);
     return Ok(buf);
 }
 
-#[allow(dead_code)]
+/*#[allow(dead_code)]
 pub fn read_to_end_tcp_stream_bytes(
     stream: &mut TcpStream,
     max_read_size: usize,
@@ -326,7 +374,7 @@ pub fn read_to_end_tcp_stream_bytes(
     }
     //info!("bytes: {:?}", buf);
     return Ok(buf);
-}
+}*/
 #[allow(dead_code)]
 pub fn read_tcp_stream_string(stream: &mut TcpStream, max_read_size: usize) -> Result<String> {
     let vec = read_tcp_stream_bytes(stream, max_read_size)?;
