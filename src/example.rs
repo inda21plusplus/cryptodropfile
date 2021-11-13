@@ -4,6 +4,7 @@ use crate::protobuf_msg::SomeMessage;
 use crate::server;
 use prost::Message;
 use std::net::TcpStream;
+pub use log::*;
 
 pub fn register_user_example() {
     let mut user = server::UserConnection::new(None);
@@ -14,10 +15,10 @@ pub fn register_user_example() {
         filename: "".into(),
         data: user_hash,
     };
-    println!("handle message");
+    info!("handle message");
     let result = user.handle_message(&msg);
     if result.is_err() {
-        println!("print error");
+        info!("print error");
         let err = result.as_ref().err().unwrap();
         //print!("{}", err.to_string());
     }
@@ -35,7 +36,7 @@ pub fn login_add_file_example() {
     };
     let result = user.handle_message(&msg);
     if result.is_err() {
-        println!("print error");
+        info!("print error");
         let err = result.as_ref().err().unwrap();
         //print!("{}", err.to_string());
     }
@@ -49,7 +50,7 @@ pub fn login_add_file_example() {
     };
     let result = user.handle_message(&msg);
     if result.is_err() {
-        println!("print error");
+        info!("print error");
         let err = result.as_ref().err().unwrap();
     }
 }
@@ -66,7 +67,7 @@ pub fn login_get_file_list_example() {
     };
     let result = user.handle_message(&msg);
     if result.is_err() {
-        println!("print error");
+        info!("print error");
         let err = result.as_ref().err().unwrap();
         //print!("{}", err.to_string());
     }
@@ -79,23 +80,23 @@ pub fn login_get_file_list_example() {
     };
     let result = user.get_file_list();
     if result.is_err() {
-        println!("print error");
+        info!("print error");
         let err = result.as_ref().err().unwrap();
     } else {
-        println!("File_list: ");
+        info!("File_list: ");
         for i in result.unwrap().data {
             print!("{}", i as char);
         }
-        println!();
+        info!("");
     }
 }
 
 pub fn run_client() {
-    println!("Setting up client!");
+    info!("Setting up client!");
     let mut clientstream = TcpStream::connect("127.0.0.1:3000");
     if clientstream.is_ok() {
         let mut clientstream = clientstream.as_mut().unwrap();
-        println!("Client setup successfull!");
+        info!("Client setup successfull!");
 
         // Login client
         let username = "someuser";
@@ -106,7 +107,7 @@ pub fn run_client() {
             data: user_hash,
         };
         let buf = protobuf_msg::encode(vec![&msg]);
-        println!("Client: Sending message");
+        info!("Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
 
         let msg = protobuf_msg::SomeMessage {
@@ -115,26 +116,31 @@ pub fn run_client() {
             data: "this text is inside file".to_string().as_bytes().to_vec(),
         };
         let buf = protobuf_msg::encode(vec![&msg]);
-        println!("Client: Sending message");
+        info!("Sending message");
         server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
-        println!("Client: Waiting for respons");
+        info!("Waiting for respons");
 
         loop {
             let result = server::read_tcp_stream_bytes(clientstream, 100000000);
             if result.is_ok() {
-                println!("Client: recieved bytes: {}", result.unwrap().len())
+                info!("recieved bytes: {}", result.unwrap().len())
             }
         }
     } else {
-        println!("Client setup failed");
+        info!("Client setup failed");
     }
+}
+
+pub fn spawn_server() {
+    let handle = std::thread::Builder::new().name("server".to_string()).spawn(create_server_client).unwrap();
+    handle.join();
 }
 
 pub fn create_server_client() {
     let mut server = crate::server::Server::new(3000, true).expect("Create server failed: ");
     //let dur: std::time::Duration = std::time::Duration::from_secs_f64(1.0);
     //std::thread::sleep(dur);
-    std::thread::spawn(run_client);
+    let _ = std::thread::Builder::new().name("client".to_string()).spawn(run_client);
 
     loop {
         server.update();

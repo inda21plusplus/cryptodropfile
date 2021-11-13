@@ -2,6 +2,7 @@
 
 use crate::protobuf_msg;
 use prost::Message;
+pub use log::*;
 
 pub fn sandbox() {
     // Example on splitting messages

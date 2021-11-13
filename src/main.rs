@@ -7,16 +7,14 @@ mod protobuf_msg;
 mod sandbox;
 mod server;
 
-//extern crate log;
 pub use log::*;
 
 pub fn main() {
     logger::init(Default::default());
-    warn!("Setup inited!");
-    info!("Hello main!");
+    info!("Setup inited!");
 
     //sandbox::sandbox();
-    //crate::example::create_server_client();
+    crate::example::spawn_server();
     //crate::example::run_examples();
     //let mut server = crate::server::Server::new(3000, true).expect("Create server failed: ");
     //loop {

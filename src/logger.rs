@@ -1,5 +1,4 @@
 use std::io::Write;
-//use env_logger::*;
 pub use log::*;
 
 use log::LevelFilter;
@@ -17,7 +16,7 @@ impl Default for Setup {
     fn default() -> Self {
         Self {
             output_file: "log/requests.log".into(),
-            flush: true
+            flush: true,
         }
     }
 }
@@ -36,11 +35,11 @@ pub fn init(setup: Setup) {
     }
 
     let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} {h({l})} - {m}{n}")))
+        .encoder(Box::new(PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S)} {({T} {h({level})}):>15.60} - {m}{n}")))
         .build();
 
     let requests = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d} {l} - {m}{n}")))
+        .encoder(Box::new(PatternEncoder::new("{d} {file}:{line} {T} {l} - {m}{n}")))
         .build(&setup.output_file)
         .unwrap();
 
