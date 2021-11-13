@@ -92,7 +92,15 @@ impl UserConnection {
             println!("Server: Managed to parse {} of {}", msg_list.len, data.len());
         }
         for msg in msg_list.msg {
-            self.handle_message(&msg)?;
+            let h = self.handle_message(&msg);
+            if h.is_err() {
+                let respons = crate::protobuf_msg::SomeMessage {
+                    action: crate::protobuf_msg::Action::Error as i32,
+                    filename: "".into(),
+                    data: format!("Error: {:?}", h.err()).as_bytes().to_vec(),
+                };
+                self.send(&respons)?;
+            }
         }
         return Ok(());
     }
