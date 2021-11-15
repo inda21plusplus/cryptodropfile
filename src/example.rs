@@ -113,6 +113,7 @@ pub mod example {
             info!("Sending message");
             let _ = server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
     
+            // Create a new file on server
             let msg = protobuf_msg::SomeMessage {
                 action: protobuf_msg::Action::AddFile as i32,
                 filename: "new file".into(),
@@ -121,15 +122,39 @@ pub mod example {
             let buf = protobuf_msg::encode(vec![&msg]);
             info!("Sending message");
             let _ = server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
+
+            // Retrieve file from server
+            let msg = protobuf_msg::SomeMessage {
+                action: protobuf_msg::Action::GetFile as i32,
+                filename: "new file".into(),
+                data: "this text is inside file".to_string().as_bytes().to_vec(),
+            };
+            let buf = protobuf_msg::encode(vec![&msg]);
+            info!("Sending message");
+            let _ = server::write_to_tcp_stream_bytes(&mut clientstream, &buf);
             info!("Waiting for respons");
-    
-            std::thread::sleep(std::time::Duration::from_secs(10));
-            /*loop {
-                let result = server::read_tcp_stream_bytes(clientstream, 100000000);
-                if result.is_ok() {
-                    info!("recieved bytes: {}", result.unwrap().len())
+
+            let start = std::time::SystemTime::now();
+
+            loop {
+                let now = std::time::SystemTime::now();
+                if now.duration_since(start).unwrap().as_secs() > 10 {
+                    break;
                 }
-            }*/
+                std::thread::sleep(std::time::Duration::from_millis(10));
+
+                let respons = crate::server::read_tcp_stream_bytes(clientstream, 10000);
+                if respons.is_ok() {
+                    let parsed_messages = crate::protobuf_msg::decode(&respons.unwrap());
+                    for msg in parsed_messages.msg.iter() {
+                        let action = crate::protobuf_msg::Action::from_i32(msg.action);
+                        if action.is_some() {
+                            let action = action.unwrap();
+                            info!("recieved message: action: {:?}, filename: {}, data_len: {:?}", action, msg.filename, msg.data.len());
+                        }
+                    }
+                }
+            }
         } else {
             info!("Client setup failed");
         }
