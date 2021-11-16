@@ -94,13 +94,23 @@ impl UserConnection {
         for msg in msg_list.msg {
             let h = self.handle_message(&msg);
             if h.is_err() {
-                let respons = crate::protobuf_msg::SomeMessage {
+                let response = crate::protobuf_msg::SomeMessage {
                     action: crate::protobuf_msg::Action::Error as i32,
                     filename: "".into(),
-                    data: format!("Error: {:?}", h.err()).as_bytes().to_vec(),
+                    data: format!("Error: {:?}", h.err().unwrap()).as_bytes().to_vec(),
                 };
-                self.send(&respons)?;
+                self.send(&response)?;
             }
+			use crate::protobuf_msg::Action;
+			let b = Action::from_i32(msg.action);
+			if b != Some(Action::GetFile) && b != Some(Action::GetFileList) {
+				let response = crate::protobuf_msg::SomeMessage {
+                    action: crate::protobuf_msg::Action::OK as i32,
+                    filename: "".into(),
+                    data: "".into(),
+                };
+                self.send(&response)?;
+			}
         }
         return Ok(());
     }
@@ -125,12 +135,6 @@ impl UserConnection {
                 self.register_new_user(msg)?;
             }
             _ => {
-                let respons = crate::protobuf_msg::SomeMessage {
-                    action: crate::protobuf_msg::Action::Error as i32,
-                    filename: "".into(),
-                    data: "could not parse action".to_string().into_bytes(),
-                };
-                self.send(&respons)?;
                 return Err("Could not parse action: ".into());
             }
         }
@@ -192,7 +196,7 @@ impl UserConnection {
     // Get the path of the user
     pub fn user_path(&self) -> Result<String> {
         self.logged_in()?;
-        let path = "./user/".to_string() + &self.userid;
+        let path = format!("{}{}{}", "/home/gustaf/Skrivbord/research/plusplus/cryptodropfile/".to_string(), "user/".to_string(), &self.userid);
         return Ok(path);
     }
     // Save a file that was sent by client
@@ -221,6 +225,7 @@ impl UserConnection {
     pub fn load_file(&mut self, msg: &SomeMessage) -> Result<SomeMessage> {
         println!("Server: Loading file");
         let path = self.file_path(msg)?;
+		println!("{}", path);
         let data = crate::file::read_file(&path)?;
         let respons = crate::protobuf_msg::SomeMessage {
             action: crate::protobuf_msg::Action::GetFile as i32,
@@ -253,6 +258,7 @@ impl UserConnection {
     pub fn send(&mut self, msg: &SomeMessage) -> Result<()> {
         let buf = crate::protobuf_msg::encode(vec!(msg));
         println!("Server: Sending respons: {}", buf.len());
+        //println!("response: {:?}", buf);
         write_to_tcp_stream_bytes(self.stream.as_mut().unwrap(), &buf)?;
         return Ok(());
     }

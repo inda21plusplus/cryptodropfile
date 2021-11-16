@@ -24,6 +24,7 @@ pub enum Action {
     Logout = 5,
     Error = 6,
     Register = 7,
+	OK = 8
 }
 
 impl SomeMessage {
