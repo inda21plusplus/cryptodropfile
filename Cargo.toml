@@ -1,0 +1,15 @@
+[package]
+name = "cryptodropfile"
+version = "0.1.0"
+authors = ["Gustaf Haglund <ghaglund@bahnhof.se>"]
+edition = "2018"
+
+[dependencies]
+sodiumoxide = "0.2.6"
+prost = "0.6"
+prost-types = "0.6"
+rustls = {version = "0.20.0", features = ["dangerous_configuration"]}
+webpki-roots = "0.22.1"
+webpki = "0.22.0"
+bytes = "1.1.0"
+libflate = "1.1.1"
