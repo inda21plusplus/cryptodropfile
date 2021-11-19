@@ -103,7 +103,7 @@ impl UserConnection {
             }
 			use crate::protobuf_msg::Action;
 			let b = Action::from_i32(msg.action);
-			if b != Some(Action::GetFile) && b != Some(Action::GetFileList) {
+			if b != Some(Action::GetFile) && b != Some(Action::GetFileList) && b != Some(Action::ValidateRecord) /*&& b != Some(Action::AddFile) */ {
 				let response = crate::protobuf_msg::SomeMessage {
                     action: crate::protobuf_msg::Action::OK as i32,
                     filename: "".into(),
@@ -124,6 +124,16 @@ impl UserConnection {
                 let respons = self.load_file(msg)?;
                 self.send(&respons)?;
             }
+			/*Some(Action::ValidateRecord) => {
+				let hashes = crate::merkle::find_leaf_to_validate(self.merkle.clone(), (&*msg.filename).to_string());
+				println!("Hashes: {:?}", hashes);
+				let response = crate::protobuf_msg::SomeMessage {
+					action: crate::protobuf_msg::Action::ValidateRecord as i32,
+					filename: "".into(),
+					data: hashes
+				};
+				self.send(&response)?;
+			}*/
             Some(Action::AddFile) => {
                 self.save_file(msg)?;
             }
@@ -141,9 +151,11 @@ impl UserConnection {
         return Ok(());
     }
     pub fn new(stream: Option<TcpStream>) -> Self {
+		/*let merkle = crate::merkle::initialize_tree();*/
         Self {
             stream,
             userid: "".into(),
+			//merkle: merkle
         }
     }
     pub fn login(&mut self, msg: &SomeMessage) -> Result<()> {
@@ -196,7 +208,7 @@ impl UserConnection {
     // Get the path of the user
     pub fn user_path(&self) -> Result<String> {
         self.logged_in()?;
-        let path = format!("{}{}{}", "/home/gustaf/Skrivbord/research/plusplus/cryptodropfile/".to_string(), "user/".to_string(), &self.userid);
+        let path = format!("{}{}", "./user/".to_string(), &self.userid);
         return Ok(path);
     }
     // Save a file that was sent by client
@@ -206,6 +218,22 @@ impl UserConnection {
         println!("Server: Saving file");
         let path = self.file_path(msg)?;
         crate::file::write_file(&msg.data, &path)?;
+
+		/* Merkle tree
+		crate::merkle::leaf(&mut self.merkle, path.clone(), &msg.data);
+		crate::merkle::merkle_to_disk(&self.merkle);
+
+		let hashes = crate::merkle::find_leaf_to_validate(self.merkle.clone(), path);
+		println!("Hashes: {:?}", hashes);
+		let response = crate::protobuf_msg::SomeMessage {
+			action: crate::protobuf_msg::Action::ValidateRecord as i32,
+			filename: "".into(),
+			data: hashes
+		};
+		self.send(&response)?; */
+
+		//println!("Merkle: {:?}", self.merkle);
+		
         return Ok(());
     }
     // Checks if the file is a valid file name(not implemented yet)
@@ -242,7 +270,7 @@ impl UserConnection {
         let mut iter_num = 0;
         for i in file_list.iter() {
             if iter_num != 0 {
-                return_str += ", ";
+                return_str += ",";
             }
             return_str += i;
             iter_num += 1;

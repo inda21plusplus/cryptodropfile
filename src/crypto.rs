@@ -2,7 +2,7 @@ pub fn to_hex_str(data: &[u8]) -> String {
     use std::fmt::Write;
     let mut s = String::new();
     for &byte in data {
-        write!(&mut s, "{:X}", byte).expect("Unable to write");
+        write!(&mut s, "{:x}", byte).expect("Unable to write");
     }
     return s;
 }
